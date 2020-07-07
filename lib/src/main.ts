@@ -1,6 +1,6 @@
 import _ from "lodash";
 import {default as axios, Method} from "axios";
-import {UserAgentApplicationExtended} from "./UserAgentApplicationExtended";
+import {PublicClientApplicationExtended} from "./PublicClientApplicationExtended";
 import {
     Auth,
     Request,
@@ -66,11 +66,14 @@ export class MSAL implements MSALBasic {
         this.request = Object.assign(this.request, options.request);
         this.graph = Object.assign(this.graph, options.graph);
 
-        this.lib = new UserAgentApplicationExtended({
+        if (typeof this.auth.redirectUri === "function" || typeof this.auth.postLogoutRedirectUri === "function") {
+            throw new Error('MSAL 2.x redirects must be strings, not functions');
+        }
+
+        this.lib = new PublicClientApplicationExtended({
             auth: {
                 clientId: this.auth.clientId,
                 authority: this.auth.authority || `https://${this.auth.tenantName}/${this.auth.tenantId}`,
-                validateAuthority: this.auth.validateAuthority,
                 redirectUri: this.auth.redirectUri,
                 postLogoutRedirectUri: this.auth.postLogoutRedirectUri,
                 navigateToLoginRequestUrl: this.auth.navigateToLoginRequestUrl
@@ -82,7 +85,7 @@ export class MSAL implements MSALBasic {
         this.getSavedCallbacks();
         this.executeCallbacks();
         // Register Callbacks for redirect flow
-        this.lib.handleRedirectCallback((error: AuthError, response: AuthResponse) => {
+        this.lib.handleRedirectPromise().then((error: AuthError, response: AuthResponse) => {
             if (!this.isAuthenticated()) {
                 this.saveCallback('auth.onAuthentication', error, response);
             } else {
@@ -95,7 +98,8 @@ export class MSAL implements MSALBasic {
         }
         this.data.isAuthenticated = this.isAuthenticated();
         if (this.data.isAuthenticated) {
-            this.data.user = this.lib.getAccount();
+            // FIXME: in MSAL 2.x there may be multiple accounts...
+            this.data.user = this.lib.getAllAccounts()[0];
             this.acquireToken().then(() => {
                 if (this.graph.callAfterInit) {
                     this.initialMSGraphCall();
@@ -105,7 +109,7 @@ export class MSAL implements MSALBasic {
         this.getStoredCustomData();
     }
     signIn() {
-        if (!this.lib.isCallback(window.location.hash) && !this.lib.getAccount()) {
+        if (!this.lib.isCallback(window.location.hash) && (!this.lib.getAllAccounts() || this.lib.getAllAccounts().length == 0)) {
             // request can be used for login or token request, however in more complex situations this can have diverging options
             this.lib.loginRedirect(this.request);
         }
@@ -117,7 +121,7 @@ export class MSAL implements MSALBasic {
         this.lib.logout();
     }
     isAuthenticated() {
-        return !this.lib.isCallback(window.location.hash) && !!this.lib.getAccount();
+        return !this.lib.isCallback(window.location.hash) && !!this.lib.getAllAccounts();
     }
     async acquireToken(request = this.request, retries = 0) {
         try {
