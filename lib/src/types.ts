@@ -1,4 +1,5 @@
 import msal from "msal";
+import { MSAL } from './main';
 import conf from "msal/lib-commonjs/Configuration";
 import { AxiosRequestConfig } from "axios";
 
@@ -6,6 +7,22 @@ export type AuthError = msal.AuthError;
 export type AuthResponse = msal.AuthResponse;
 
 export type Auth = {
+    clientId: string,
+    authority? : string,
+    tenantId?: string,
+    tenantName?: string,
+    knownAuthorities?: Array<string>,
+    redirectUri?: string | (() => string);
+    postLogoutRedirectUri?: string | (() => string);
+    navigateToLoginRequestUrl?: boolean;
+    requireAuthOnInitialize?: boolean,
+    autoRefreshToken?: boolean,
+    onAuthentication: (ctx: object, error: AuthError, response: AuthResponse) => any,
+    onToken: (ctx: object, error: AuthError | null, response: AuthResponse | null) => any,
+    beforeSignOut: (ctx: object) => any
+}
+
+export type AuthMsal1 = {
     clientId: string,
     authority? : string,
     tenantId?: string,
@@ -69,9 +86,10 @@ export type CallbackQueueObject = {
 
 export interface MSALBasic {
     data: DataObject,
-    signIn: () => void,
+    _msal?: MSAL,
+    signIn: () => Promise<any> | void,
     signOut: () => Promise<any> | void,
-    isAuthenticated: () => boolean,
+    isAuthenticated: () => Promise<boolean>,
     acquireToken: (request: Request, retries: number) => Promise<AuthResponse | boolean>,
     msGraph: (endpoints:  GraphEndpoints, batchUrl: string | undefined) => Promise<object>,
     saveCustomData: (key: string, data: any) => void

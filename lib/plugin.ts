@@ -5,8 +5,10 @@ import { mixin } from "./mixin";
 export const msalMixin = mixin;
 
 export default class msalPlugin {
-    static install(Vue: any, options: Options): void {
-        Vue.prototype.$msal = new msalPlugin(options, Vue);
+    _msal?: MSAL;
+    static async install(Vue: any, options: Options): Promise<any> {
+        const plugin = new msalPlugin(options, Vue);
+        Vue.prototype.$msal = plugin;
     }
     constructor(options: Options, Vue: any = undefined) {
         const msal = new MSAL(options);
@@ -15,6 +17,7 @@ export default class msalPlugin {
         }
         const exposed: MSALBasic = {
             data: msal.data,
+            _msal: msal,
             signIn() { msal.signIn(); },
             async signOut() { await msal.signOut(); },
             isAuthenticated() { return msal.isAuthenticated(); },

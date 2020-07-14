@@ -20,6 +20,8 @@ import {
 export class MSAL implements MSALBasic {
     private lib: any;
     private tokenExpirationTimers: {[key: string]: undefined | number} = {};
+    public initialized: Promise<boolean>;
+    public _msal?: MSAL;
     public data: DataObject = {
         isAuthenticated: false,
         accessToken: '',
@@ -34,7 +36,7 @@ export class MSAL implements MSALBasic {
         authority: '',
         tenantId: 'common',
         tenantName: 'login.microsoftonline.com',
-        validateAuthority: true,
+        knownAuthorities: [],
         redirectUri: window.location.href,
         postLogoutRedirectUri: window.location.href,
         navigateToLoginRequestUrl: true,
@@ -74,6 +76,7 @@ export class MSAL implements MSALBasic {
             auth: {
                 clientId: this.auth.clientId,
                 authority: this.auth.authority || `https://${this.auth.tenantName}/${this.auth.tenantId}`,
+                knownAuthorities: this.auth.knownAuthorities || [],
                 redirectUri: this.auth.redirectUri,
                 postLogoutRedirectUri: this.auth.postLogoutRedirectUri,
                 navigateToLoginRequestUrl: this.auth.navigateToLoginRequestUrl
@@ -82,46 +85,68 @@ export class MSAL implements MSALBasic {
             system: options.system
         });
 
+        this.initialized = new Promise(this.initialize.bind(this));
+    }
+
+    private async initialize (resolve) {
         this.getSavedCallbacks();
         this.executeCallbacks();
         // Register Callbacks for redirect flow
-        this.lib.handleRedirectPromise().then((error: AuthError, response: AuthResponse) => {
-            if (!this.isAuthenticated()) {
+        await this.lib.handleRedirectPromise().then(async (error: AuthError, response: AuthResponse) => {
+            if (!this.isAuthenticatedNow()) {
                 this.saveCallback('auth.onAuthentication', error, response);
             } else {
-                this.acquireToken();
+                await this.acquireToken();
             }
         });
 
         if (this.auth.requireAuthOnInitialize) {
-            this.signIn()
+            await this.signInNow();
         }
-        this.data.isAuthenticated = this.isAuthenticated();
+        this.data.isAuthenticated = this.isAuthenticatedNow();
         if (this.data.isAuthenticated) {
             // FIXME: in MSAL 2.x there may be multiple accounts...
             this.data.user = this.lib.getAllAccounts()[0];
-            this.acquireToken().then(() => {
+            await this.acquireToken().then(() => {
                 if (this.graph.callAfterInit) {
                     this.initialMSGraphCall();
                 }
             });
         }
         this.getStoredCustomData();
+
+        resolve()
     }
-    signIn() {
-        if (!this.lib.isCallback(window.location.hash) && (!this.lib.getAllAccounts() || this.lib.getAllAccounts().length == 0)) {
+    async signIn() {
+        await this.initialized;
+        return await this.signInNow();
+    }
+    private async signInNow() {
+        if (!this.lib.isCallback(window.location.hash) && (!this.lib.getAllAccounts() || this.lib.getAllAccounts().length == 0) && !this.lib.interactionInProgress()) {
             // request can be used for login or token request, however in more complex situations this can have diverging options
-            this.lib.loginRedirect(this.request);
+            await this.lib.loginRedirect(this.request);
         }
     }
     async signOut() {
+        await this.initialized;
+
         if (this.options.auth.beforeSignOut) {
             await this.options.auth.beforeSignOut(this);
         }
-        this.lib.logout();
+        if (this.isAuthenticatedNow()) {
+            const accounts = this.lib.getAllAccounts();
+            this.lib.logout({
+                'account': accounts[0]
+            });
+        }
     }
-    isAuthenticated() {
-        return !this.lib.isCallback(window.location.hash) && !!this.lib.getAllAccounts();
+    async isAuthenticated() {
+        await this.initialized;
+        return this.isAuthenticatedNow();
+    }
+    private isAuthenticatedNow() {
+        const accounts = this.lib.getAllAccounts();
+        return !this.lib.isCallback(window.location.hash) && !!accounts && accounts.length;
     }
     async acquireToken(request = this.request, retries = 0) {
         try {
