@@ -92,6 +92,14 @@ export class MSAL implements MSALBasic {
         this.getSavedCallbacks();
         this.executeCallbacks();
         // Register Callbacks for redirect flow
+        if (this.auth.authorityTokenEndpointOverride) {
+            const _getClientConfiguration = this.lib.getClientConfiguration;
+            this.lib.getClientConfiguration = async (requestAuthority) => {
+                var configuration = await _getClientConfiguration.bind(this.lib)(requestAuthority);
+                configuration.authOptions.authority.tenantDiscoveryResponse.token_endpoint = this.auth.authorityTokenEndpointOverride;
+                return configuration;
+            };
+        }
         await this.lib.handleRedirectPromise().then(async (error: AuthError, response: AuthResponse) => {
             if (!this.isAuthenticatedNow()) {
                 this.saveCallback('auth.onAuthentication', error, response);

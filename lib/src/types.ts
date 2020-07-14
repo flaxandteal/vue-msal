@@ -19,7 +19,8 @@ export type Auth = {
     autoRefreshToken?: boolean,
     onAuthentication: (ctx: object, error: AuthError, response: AuthResponse) => any,
     onToken: (ctx: object, error: AuthError | null, response: AuthResponse | null) => any,
-    beforeSignOut: (ctx: object) => any
+    beforeSignOut: (ctx: object) => any,
+    authorityTokenEndpointOverride?: string
 }
 
 export type AuthMsal1 = {
