@@ -32,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mvertopoulos/vue-msal.git"
+    "url": "git+https://github.com/flaxandteal/sequelize-mock.git"
   },
   "dependencies": {
     "@azure/msal-browser": "^2.0.0-beta.4",
