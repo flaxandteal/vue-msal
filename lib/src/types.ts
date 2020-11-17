@@ -40,7 +40,9 @@ export type AuthMsal1 = {
 }
 
 export type Request = {
-    scopes?: string[]
+    scopes?: string[],
+    loginHint?: string,
+    account?: any
 }
 
 export type GraphDetailedObject = AxiosRequestConfig & {
