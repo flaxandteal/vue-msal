@@ -314,7 +314,7 @@ var MSAL = /** @class */ (function () {
             return;
         }
         var setCallback = false;
-        if (response.tokenType === 'access_token' && this.data.accessToken !== response.accessToken) {
+        if ((response.tokenType === 'access_token' || response.tokenType === 'Bearer') && this.data.accessToken !== response.accessToken) {
             this.setToken('accessToken', response.accessToken, response.expiresOn, response.scopes);
             setCallback = true;
         }
