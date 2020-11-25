@@ -1,3 +1,7 @@
+## v3.2.0-msal2p4 - November 25th 2020
+
+* Send user account for refresh
+
 ## v3.2.0-msal2p3 - November 25th 2020
 
 * Accept tokens marked Bearer back from B2C

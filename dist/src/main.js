@@ -341,7 +341,7 @@ var MSAL = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!this.auth.autoRefreshToken) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.acquireToken({ scopes: scopes }, 3)];
+                        return [4 /*yield*/, this.acquireToken({ scopes: scopes, account: this.data.user }, 3)];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];

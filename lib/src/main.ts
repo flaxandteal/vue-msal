@@ -206,7 +206,7 @@ export class MSAL implements MSALBasic {
         if (this.tokenExpirationTimers[tokenType]) clearTimeout(this.tokenExpirationTimers[tokenType]);
         this.tokenExpirationTimers[tokenType] = window.setTimeout(async () => {
             if (this.auth.autoRefreshToken) {
-                await this.acquireToken({ scopes }, 3);
+                await this.acquireToken({ scopes, account: this.data.user }, 3);
             } else {
                 this.data[tokenType] = '';
             }
