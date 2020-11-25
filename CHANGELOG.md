@@ -1,3 +1,7 @@
+## v3.2.0-msal2p3 - November 25th 2020
+
+* Accept tokens marked Bearer back from B2C
+
 ## v3.2.0-msal2p2 - November 17th 2020
 
 * Minor fixes and updates for B2C
